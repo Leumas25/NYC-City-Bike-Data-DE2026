@@ -1,0 +1,88 @@
+id: backfill
+namespace: zoomcamp
+
+description: |
+  Backfill task for citibike data from 2013 to 2023
+
+variables:
+  file: "{{trigger.date | date('yyyyMM')}}-citibike-tripdata.zip"
+  csv_file: "{{trigger.date | date('yyyyMM')}}-citibike-tripdata.csv"
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{secret('GCP_SERVICE_ACCOUNT')}}"
+      projectId: "{{kv('GCP_PROJECT_ID')}}"
+      location: "{{kv('GCP_LOCATION')}}"
+      bucket: "{{kv('GCP_BUCKET_NAME')}}"
+
+tasks:
+  - id: run_kv_flow
+    type: io.kestra.plugin.core.flow.Subflow
+    namespace: zoomcamp
+    flowId: key_values        # replace with your actual KV flow id
+    wait: true                # wait for it to finish before continuing
+    transmitFailed: true  
+
+  - id: download_and_extract
+    type: io.kestra.plugin.scripts.shell.Commands
+    outputFiles:
+      - "*.csv"
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    beforeCommands:
+      - apt-get install -y wget unzip
+    commands:
+      - wget -qO {{render(vars.file)}} https://s3.amazonaws.com/tripdata/{{render(vars.file)}}
+      - unzip -o {{render(vars.file)}} '*.csv'
+      - |
+        MONTH="{{trigger.date | date('yyyyMM')}}"
+        OUTPUT="${MONTH}-citibike-tripdata.csv"
+        PARTS=$(ls ${MONTH}-citibike-tripdata_*.csv 2>/dev/null | sort -t_ -k2 -n)
+        if [ -z "$PARTS" ]; then
+          cp ${MONTH}-citibike-tripdata.csv "$OUTPUT" 2>/dev/null || true
+        else
+          FIRST=true
+          for f in $PARTS; do
+            if [ "$FIRST" = true ]; then
+              cat "$f" > "$OUTPUT"
+              FIRST=false
+            else
+              tail -n +2 "$f" >> "$OUTPUT"
+            fi
+          done
+        fi
+
+  - id: upload_to_gcs
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{outputs.download_and_extract.outputFiles[trigger.date | date('yyyyMM') ~ '-citibike-tripdata.csv']}}"
+    to: "gs://{{kv('GCP_BUCKET_NAME')}}/{{render(vars.csv_file)}}"
+
+errors:
+  - id: cleanup_on_failure
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - |
+        MONTH="{{trigger.date | date('yyyyMM')}}"
+        rm -f ${MONTH}-citibike-tripdata.zip
+        rm -f ${MONTH}-citibike-tripdata*.csv
+        echo "Cleaned up files for $MONTH"
+
+finally:
+  - id: cleanup_on_success
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - |
+        MONTH="{{trigger.date | date('yyyyMM')}}"
+        rm -f ${MONTH}-citibike-tripdata.zip
+        rm -f ${MONTH}-citibike-tripdata*.csv
+        echo "Cleaned up files for $MONTH"
+
+triggers:
+  - id: backfill_schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 9 1 * *"

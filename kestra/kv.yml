@@ -1,0 +1,25 @@
+id: key_values
+namespace: zoomcamp
+
+description: |
+  Key value pairs for kestra
+
+tasks:
+  - id: gcp_project_id
+    type: io.kestra.plugin.core.kv.Set
+    key: GCP_PROJECT_ID
+    kvType: STRING
+    value: nyc-city-bike-491516
+
+  - id: gcp_location
+    type: io.kestra.plugin.core.kv.Set
+    key: GCP_LOCATION
+    kvType: STRING
+    value: us-east1-b
+
+  - id: gcp_bucket_name
+    type: io.kestra.plugin.core.kv.Set
+    key: GCP_BUCKET_NAME
+    kvType: STRING
+    value:  nyc-city-bike-data-bucket
+

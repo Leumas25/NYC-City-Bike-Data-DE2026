@@ -32,6 +32,7 @@ services:
       - kestra-data:/app/storage
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/kestra-wd:/tmp/kestra-wd
+      - ./kestra:/app/flows
     environment:
       SECRET_GCP_SERVICE_ACCOUNT: ${SECRET_GCP_SERVICE_ACCOUNT}
       KESTRA_CONFIGURATION: |
@@ -42,6 +43,11 @@ services:
             username: kestra
             password: k3str4
         kestra:
+          flows:
+            storage:
+              type: local
+              local:
+                path: /app/flows
           # server:
           #   basic-auth:
           #     username: admin@kestra.io # it must be a valid email address

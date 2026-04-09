@@ -1,0 +1,12 @@
+version: 2
+
+# BigQuery: database = GCP project ID, schema = dataset name (not the project ID).
+# Table citibike_tripdata must already exist in this dataset.
+sources:
+  - name: citibike
+    database: nyc-city-bike-491516
+    schema: nyc_citi_bike_zoomcamp
+    description: Citibike data
+    tables:
+      - name: citibike_tripdata
+        description: Customer trip data for 2024-2025

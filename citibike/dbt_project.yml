@@ -1,0 +1,24 @@
+name: nyc_citi_bike_zoomcamp
+
+profile: nyc_citi_bike_zoomcamp
+
+seed-paths: ["seeds"]
+model-paths: ["models"]
+macro-paths: ["macros"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+seeds:
+  # Builds seeds into '<your_schema_name>_raw'
+  nyc_citi_bike_zoomcamp:
+    +schema: raw
+
+models:
+  nyc_citi_bike_zoomcamp:
+    +static_analysis: strict
+    # Materialize staging models as views, and marts as tables
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

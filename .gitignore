@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# GCP service account key
+nyc-city-bike-491516-4c6f3dbc38a3.json
+
 # C extensions
 *.so
 

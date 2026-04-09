@@ -1,0 +1,10 @@
+macros: 
+  - name: get_trip_duration
+    description: This macro calculates the trip duration in minutes.
+    arguments:
+      - name: started_at
+        type: timestamp
+        description: The start time of the ride
+      - name: ended_at
+        type: timestamp
+        description: The end time of the ride

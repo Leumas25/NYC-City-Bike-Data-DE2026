@@ -79,7 +79,8 @@ tasks:
         end_lng FLOAT64 OPTIONS ( description = 'The longitude of the station where the ride started'),
         member_casual STRING OPTIONS ( description = 'The type of user: casual or member')
       )
-
+      PARTITION BY DATE(started_at)
+      
   - id: create_external_table
     type: io.kestra.plugin.gcp.bigquery.Query
     sql: |

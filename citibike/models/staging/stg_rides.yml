@@ -1,0 +1,57 @@
+models:
+  - name: stg_rides
+    description: Ride data with basic cleaning and transformation applied, one row per ride.
+    columns:
+      - name: ride_id
+        description: "The unique key for each ride."
+        data_tests:
+          - not_null
+          - unique
+      - name: rideable_type
+        description: "The type of bike used for the ride."
+        data_tests:
+          - not_null
+      - name: started_at
+        description: "The start time of the ride."
+        data_tests:
+          - not_null
+      - name: ended_at
+        description: "The end time of the ride."
+        data_tests:
+          - not_null  
+      - name: start_station_id
+        description: "The ID of the station where the ride started."
+        data_tests:
+          - not_null
+      - name: start_station_name
+        description: "The name of the station where the ride started."
+        data_tests:
+          - not_null
+      - name: end_station_id
+        description: "The ID of the station where the ride ended."
+        data_tests:
+          - not_null
+      - name: end_station_name
+        description: "The name of the station where the ride ended."
+        data_tests:
+          - not_null
+      - name: start_lat
+        description: "The latitude of the station where the ride started."
+        data_tests:
+          - not_null
+      - name: start_lng
+        description: "The longitude of the station where the ride started."
+        data_tests:
+          - not_null
+      - name: end_lat
+        description: "The latitude of the station where the ride ended."
+        data_tests:
+          - not_null
+      - name: end_lng
+        description: "The longitude of the station where the ride ended."                 
+        data_tests:
+          - not_null
+      - name: member_casual
+        description: "The type of user: casual or member."
+        data_tests:
+          - not_null

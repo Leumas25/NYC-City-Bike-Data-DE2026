@@ -7,6 +7,8 @@ description: |
 variables:
   file: "{{trigger.date | date('yyyyMM')}}-citibike-tripdata.zip"
   csv_file: "{{trigger.date | date('yyyyMM')}}-citibike-tripdata.csv"
+  table: "Citibike_{{trigger.date | date('yyyyMM')}}_citibike_tripdata"
+  gcs_file: "gs://{{kv('GCP_BUCKET_NAME')}}/{{vars.file}}"
 
 pluginDefaults:
   - type: io.kestra.plugin.gcp
@@ -31,7 +33,7 @@ tasks:
     taskRunner:
       type: io.kestra.plugin.core.runner.Process
     beforeCommands:
-      - apt-get install -y wget unzip
+      - apt-get update && apt-get install -y wget unzip
     commands:
       - wget -qO {{render(vars.file)}} https://s3.amazonaws.com/tripdata/{{render(vars.file)}}
       - unzip -o {{render(vars.file)}} '*.csv'
@@ -53,10 +55,76 @@ tasks:
           done
         fi
 
+
   - id: upload_to_gcs
     type: io.kestra.plugin.gcp.gcs.Upload
     from: "{{outputs.download_and_extract.outputFiles[trigger.date | date('yyyyMM') ~ '-citibike-tripdata.csv']}}"
     to: "gs://{{kv('GCP_BUCKET_NAME')}}/{{render(vars.csv_file)}}"
+
+  - id: create_table
+    type: io.kestra.plugin.gcp.bigquery.Query
+    sql: |
+      CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.citibike_tripdata` (
+        ride_id STRING OPTIONS ( description = 'The unique identifier for the ride'),
+        rideable_type STRING OPTIONS ( description = 'The type of bike used for the ride'),
+        started_at TIMESTAMP OPTIONS ( description = 'The start time of the ride'),
+        ended_at TIMESTAMP OPTIONS ( description = 'The end time of the ride'),
+        start_station_id STRING OPTIONS ( description = 'The ID of the station where the ride started'),
+        start_station_name STRING OPTIONS ( description = 'The name of the station where the ride started'),
+        end_station_id STRING OPTIONS ( description = 'The ID of the station where the ride ended'),
+        end_station_name STRING OPTIONS ( description = 'The name of the station where the ride ended'),
+        start_lat FLOAT64 OPTIONS ( description = 'The latitude of the station where the ride started'),
+        start_lng FLOAT64 OPTIONS ( description = 'The longitude of the station where the ride started'),
+        end_lat FLOAT64 OPTIONS ( description = 'The latitude of the station where the ride started'),
+        end_lng FLOAT64 OPTIONS ( description = 'The longitude of the station where the ride started'),
+        member_casual STRING OPTIONS ( description = 'The type of user: casual or member')
+      )
+
+  - id: create_external_table
+    type: io.kestra.plugin.gcp.bigquery.Query
+    sql: |
+      CREATE OR REPLACE EXTERNAL TABLE `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.{{render(vars.table)}}_ext` (
+        ride_id STRING OPTIONS ( description = 'The unique identifier for the ride'),
+        rideable_type STRING OPTIONS ( description = 'The type of bike used for the ride'),
+        started_at TIMESTAMP OPTIONS ( description = 'The start time of the ride'),
+        ended_at TIMESTAMP OPTIONS ( description = 'The end time of the ride'),
+        start_station_id STRING OPTIONS ( description = 'The ID of the station where the ride started'),
+        start_station_name STRING OPTIONS ( description = 'The name of the station where the ride started'),
+        end_station_id STRING OPTIONS ( description = 'The ID of the station where the ride ended'),
+        end_station_name STRING OPTIONS ( description = 'The name of the station where the ride ended'),
+        start_lat FLOAT64 OPTIONS ( description = 'The latitude of the station where the ride started'),
+        start_lng FLOAT64 OPTIONS ( description = 'The longitude of the station where the ride started'),
+        end_lat FLOAT64 OPTIONS ( description = 'The latitude of the station where the ride started'),
+        end_lng FLOAT64 OPTIONS ( description = 'The longitude of the station where the ride started'),
+        member_casual STRING OPTIONS ( description = 'The type of user: casual or member')
+      )
+      OPTIONS (
+      format = 'CSV',
+      uris = ['{{render(vars.gcs_file)}}'],
+      skip_leading_rows = 1,
+      ignore_unknown_values = TRUE
+      );
+
+  - id: bq_citi_table_tmp
+    type: io.kestra.plugin.gcp.bigquery.Query
+    sql: |
+      CREATE OR REPLACE TABLE `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.{{render(vars.table)}}`
+      AS
+      SELECT *
+      FROM `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.{{render(vars.table)}}_ext`;
+
+  - id: bq_citibike_merge
+    type: io.kestra.plugin.gcp.bigquery.Query
+    sql: |
+      MERGE INTO `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.citibike_tripdata` T
+      USING `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.{{render(vars.table)}}` S
+      ON T.ride_id = S.ride_id
+      WHEN NOT MATCHED THEN
+         INSERT (ride_id,rideable_type,started_at, ended_at, start_station_name, start_station_id, end_station_name,end_station_id,start_lat, start_lng, end_lat, end_lng, member_casual)
+         VALUES(S.ride_id, S.rideable_type, S.started_at, S.ended_at, S.start_station_name, S.start_station_id, S.end_station_name, S.end_station_id, S.start_lat, S.start_lng, S.end_lat, S.end_lng, S.member_casual);
+
+  - id: purge
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
 
 errors:
   - id: cleanup_on_failure
@@ -66,8 +134,7 @@ errors:
     commands:
       - |
         MONTH="{{trigger.date | date('yyyyMM')}}"
-        rm -f ${MONTH}-citibike-tripdata.zip
-        rm -f ${MONTH}-citibike-tripdata*.csv
+        rm -f *.csv
         echo "Cleaned up files for $MONTH"
 
 finally:
@@ -78,8 +145,7 @@ finally:
     commands:
       - |
         MONTH="{{trigger.date | date('yyyyMM')}}"
-        rm -f ${MONTH}-citibike-tripdata.zip
-        rm -f ${MONTH}-citibike-tripdata*.csv
+        rm -f *.csv
         echo "Cleaned up files for $MONTH"
 
 triggers:

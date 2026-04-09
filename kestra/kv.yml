@@ -9,7 +9,7 @@ tasks:
     type: io.kestra.plugin.core.kv.Set
     key: GCP_PROJECT_ID
     kvType: STRING
-    value: nyc-city-bike-491516
+    value: project-id
 
   - id: gcp_location
     type: io.kestra.plugin.core.kv.Set
@@ -23,3 +23,14 @@ tasks:
     kvType: STRING
     value:  nyc-city-bike-data-bucket
 
+  - id: gcp_dataset_name
+    type: io.kestra.plugin.core.kv.Set
+    key: GCP_DATASET_NAME
+    kvType: STRING
+    value: citibike
+
+  - id: gcp_table_name
+    type: io.kestra.plugin.core.kv.Set
+    key: GCP_TABLE_NAME
+    kvType: STRING
+    value: citibike_trips

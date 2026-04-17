@@ -3,7 +3,7 @@ with
 source as (
 
     select * from {{ source('citibike', 'citibike_tripdata') }}
-
+    where start_lat is not null and start_lng is not null and end_lat is not null and end_lng is not null and start_station_id is not null and end_station_id is not null
 ),
 
 renamed as (

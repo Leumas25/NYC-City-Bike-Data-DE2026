@@ -8,3 +8,18 @@ macros:
       - name: ended_at
         type: timestamp
         description: The end time of the ride
+  - name: get_distance
+    description: This macro calculates the distance between two points in kilometers.
+    arguments:
+      - name: start_lat
+        type: float
+        description: The latitude of the start point
+      - name: start_lng
+        type: float
+        description: The longitude of the start point
+      - name: end_lat
+        type: float
+        description: The latitude of the end point
+      - name: end_lng
+        type: float
+        description: The longitude of the end point

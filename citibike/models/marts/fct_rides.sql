@@ -11,6 +11,8 @@ select
     started_at,
     ended_at,
     {{ get_trip_duration('started_at', 'ended_at') }} as ride_duration,
+    --distance
+    {{ get_distance('start_lat', 'start_lng', 'end_lat', 'end_lng') }} as distance,
     --station ids
     start_station_id,
     start_station_name,

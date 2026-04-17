@@ -25,5 +25,5 @@ variable "location" {
 variable "bq_dataset_name" {
   type        = string
   description = "Name of the BigQuery dataset to create."
-  default     = "nyc_city_bike_data"
+  default     = "nyc_city_bike_zoomcamp"
 }

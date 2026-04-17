@@ -9,8 +9,8 @@ terraform {
 
 provider "google" {
   credentials = file("nyc-city-bike-491516-fd935bb6b12e.json")
-  project     = "nyc-city-bike-491516"
-  region      = "us-central1"
+  project     = var.project_id
+  region      = var.region
 
 } 
 
